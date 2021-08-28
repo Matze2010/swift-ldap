@@ -17,7 +17,8 @@ let package = Package(
         .target(
             name: "SwiftLDAP",
             dependencies: [
-                "OpenLDAP"
+                .target(name: "OpenLDAP"),
+                .product(name: "NIO", package: "swift-nio")
             ]),
         .testTarget(
             name: "SwiftLDAPTests",
