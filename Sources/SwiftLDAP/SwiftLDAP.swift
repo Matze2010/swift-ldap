@@ -76,7 +76,7 @@ class SwiftLDAP {
         return promise.futureResult
     }
     
-    public func search(for search: SearchParameter) throws -> [Message]? {
+    public func search(for search: SearchParameter) throws -> ResultSet? {
         
         var ldapControl = UnsafeMutablePointer<LDAPControl>(bitPattern: 0)
         var chain = OpaquePointer(bitPattern: 0)
@@ -103,12 +103,12 @@ class SwiftLDAP {
             ldap_msgfree(chain)
         }
         
-        var result: [Message?] = .init()
+        var result = ResultSet()
         var msg = ldap_first_message(self.ldap, chain)
         while(msg != nil) {
           switch(UInt(ldap_msgtype(msg))) {
           case LDAP_RES_SEARCH_ENTRY:
-            result.append(Attribute(message: msg!, ldap: self))
+            result.append(Attributes(message: msg!, ldap: self))
           case LDAP_RES_SEARCH_REFERENCE:
             result.append(Reference(message: msg!, ldap: self))
           case LDAP_RES_SEARCH_RESULT:
@@ -119,14 +119,14 @@ class SwiftLDAP {
           msg = ldap_next_message(ldap, msg)
         }
         
-        return result.compactMap { $0 }
+        return result
     }
     
-    public func search(for search: SearchParameter, on: EventLoop) -> EventLoopFuture<[Message]?> {
+    public func search(for search: SearchParameter, on: EventLoop) -> EventLoopFuture<ResultSet?> {
         
-        let promise: EventLoopPromise<[Message]?> = on.makePromise()
+        let promise: EventLoopPromise<ResultSet?> = on.makePromise()
         queue.async {
-            var searchResult: [Message]? = nil
+            var searchResult: ResultSet? = nil
             do {
                 searchResult = try self.search(for: search)
             } catch {

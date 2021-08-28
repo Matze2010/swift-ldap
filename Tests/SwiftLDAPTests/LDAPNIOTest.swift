@@ -30,13 +30,18 @@ final class LDAPNIOTests: XCTestCase {
         let auth = SwiftLDAP.AuthMechanism.simple(dn: Self.credentials.testBDN, password: Self.credentials.testPWD)
         let eventLoop = Self.eventLoopGroup.next()
         
-        let searchFuture: EventLoopFuture<[Message]?> = ldap.bind(auth: auth, on: eventLoop).flatMap {
+        let searchFuture: EventLoopFuture<ResultSet?> = ldap.bind(auth: auth, on: eventLoop).flatMap {
             var searchParam = SwiftLDAP.SearchParameter.empty
             searchParam.base = LDAPNIOTests.credentials.testBASEDN
+            searchParam.scope = .children
             return ldap.search(for: searchParam, on: eventLoop)
         }
         searchFuture.whenFailure { error in
             XCTFail(error.localizedDescription)
+        }
+        
+        searchFuture.whenSuccess { resultset in
+            NSLog("\(resultset)")
         }
     }
     

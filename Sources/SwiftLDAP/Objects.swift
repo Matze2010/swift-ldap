@@ -8,13 +8,32 @@
 import Foundation
 import OpenLDAP
 
-protocol Message {
+struct ResultSet {
+    internal var _result: [Result] = .init()
+    internal var _attributes: [Attributes] = .init()
+    internal var _references: [Reference] = .init()
     
-    init?(message: OpaquePointer, ldap: SwiftLDAP)
+    mutating public func append(_ result: Result?) {
+        if let entry = result {
+            _result.append(entry)
+        }
+    }
+    
+    mutating public func append(_ result: Attributes?) {
+        if let entry = result {
+            _attributes.append(entry)
+        }
+    }
+    
+    mutating public func append(_ result: Reference?) {
+        if let entry = result {
+            _references.append(entry)
+        }
+    }
     
 }
 
-struct Result: Message {
+struct Result {
     
     /// error code of result
     internal var _errCode = Int32(0)
@@ -77,7 +96,12 @@ struct Result: Message {
     }
 }
 
-struct Attribute: Message {
+struct Attribute {
+    let key: String
+    let values: [String]
+}
+
+struct Attributes {
     
     /// name of the attribute
     internal var _name = ""
@@ -86,10 +110,10 @@ struct Attribute: Message {
     public var name: String { _name }
 
     /// attribute value set array
-    internal var _attributes: [String : [String]] = .init()
+    internal var _attributes: [Attribute] = .init()
 
     /// attribute value set array, read only
-    public var attributes: [String : [String]] { _attributes }
+    public var attributes: [Attribute] { _attributes }
     
     init?(message entry: OpaquePointer, ldap: SwiftLDAP) {
         
@@ -121,7 +145,8 @@ struct Attribute: Message {
               cursor = cursor?.successor()
             }
             
-            _attributes[key] = values
+            let newAttribute = Attribute(key: key, values: values)
+            _attributes.append(newAttribute)
             
             if valueSet != nil {
               ldap_value_free_len(valueSet)
@@ -136,7 +161,7 @@ struct Attribute: Message {
     }
 }
 
-struct Reference: Message {
+struct Reference {
     
     /// value set in an array of string
     internal var _values = [String] ()
