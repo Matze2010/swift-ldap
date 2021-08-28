@@ -1,0 +1,9 @@
+Packages
+Package.resolved
+.build
+xcuserdata
+*.xcodeproj
+DerivedData/
+.DS_Store
+.swiftpm
+*/TestCredentials.swift
