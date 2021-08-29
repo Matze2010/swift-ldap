@@ -85,6 +85,26 @@ class SwiftLDAP {
             ldap_control_free(ldapControl)
         }
         
+        if !search.sorting.isEmpty {
+            let sortedBy = search.sorting.reduce("") { previous, sortParam in
+                return previous.isEmpty ? sortParam.sortString : previous + " " + sortParam.sortString
+            }
+            
+            var sortKeyList = UnsafeMutablePointer<UnsafeMutablePointer<LDAPSortKey>?>(bitPattern: 0)
+            let sortString = ber_strdup(sortedBy)
+            let res_sortlist = ldap_create_sort_keylist(&sortKeyList, sortString)
+            defer { ber_memfree(sortString) }
+            guard res_sortlist == LDAP_SUCCESS else {
+                throw SwiftLDAP.Exception.frameworkError(SwiftLDAP.error(res_sortlist))
+            }
+
+            let res_sortcontrol = ldap_create_sort_control(self.ldap, sortKeyList, 0, &ldapControl)
+            defer { ldap_free_sort_keylist(sortKeyList) }
+            guard res_sortcontrol == LDAP_SUCCESS else {
+                throw SwiftLDAP.Exception.frameworkError(SwiftLDAP.error(res_sortcontrol))
+            }
+        }
+        
         let res_search = withCArrayOfString(array: search.attributes) { pAttribute -> Int32 in
 
             // perform the search
@@ -165,9 +185,28 @@ extension SwiftLDAP {
         var filter: String
         var scope: SearchScope
         var attributes: [SearchAttribute]
+        var sorting: [SortParameter] = .init()
+        
+        mutating public func addSortParameter(_ param: SortParameter) {
+            sorting.append(param)
+        }
         
         static var empty: SearchParameter {
             SearchParameter(base: "", filter: "(objectclass=*)", scope: .base, attributes: [])
+        }
+    }
+    
+    public enum SortParameter {
+        case ascending(String)
+        case descending(String)
+        
+        public var sortString: String {
+            switch self {
+            case .ascending(let param):
+                return param
+            case .descending(let param):
+                return "-" + param
+            }
         }
     }
 

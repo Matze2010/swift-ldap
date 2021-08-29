@@ -41,7 +41,7 @@ final class LDAPNIOTests: XCTestCase {
         }
         
         searchFuture.whenSuccess { resultset in
-            NSLog("\(resultset)")
+            NSLog("\(resultset!)")
         }
     }
     
