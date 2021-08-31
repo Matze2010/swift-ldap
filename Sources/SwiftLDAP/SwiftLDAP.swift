@@ -79,7 +79,7 @@ class SwiftLDAP {
     public func search(for search: SearchParameter) throws -> ResultSet? {
         
         var ldapControl = UnsafeMutablePointer<LDAPControl>(bitPattern: 0)
-        var chain = OpaquePointer(bitPattern: 0)
+        var chainPointer = OpaquePointer(bitPattern: 0)
         
         defer {
             ldap_control_free(ldapControl)
@@ -108,14 +108,14 @@ class SwiftLDAP {
         let res_search = withCArrayOfString(array: search.attributes) { pAttribute -> Int32 in
 
             // perform the search
-            let result = ldap_search_ext_s(self.ldap, search.base, search.scope.rawValue, search.filter, pAttribute, 0, &ldapControl, nil, nil, 0, &chain)
+            let result = ldap_search_ext_s(self.ldap, search.base, search.scope.rawValue, search.filter, pAttribute, 0, &ldapControl, nil, nil, 0, &chainPointer)
             return result
         }
         guard res_search == LDAP_SUCCESS else {
             throw SwiftLDAP.Exception.frameworkError(SwiftLDAP.error(res_search))
         }
         
-        guard let chain = chain else {
+        guard let chain = chainPointer else {
             return nil
         }
 
